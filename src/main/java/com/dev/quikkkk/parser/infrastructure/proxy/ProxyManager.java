@@ -20,10 +20,10 @@ public class ProxyManager {
         proxies.addAll(Files.readAllLines(Path.of(filePath)));
     }
 
-    public WebDriver createDriver() {
+    public WebDriver createDriver(boolean isManualCaptcha) {
         ChromeOptions options = new ChromeOptions();
 
-        options.addArguments("--headless=new");
+        if (!isManualCaptcha) options.addArguments("--headless=new");
         options.addArguments("--disable-blink-features=AutomationControlled");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
