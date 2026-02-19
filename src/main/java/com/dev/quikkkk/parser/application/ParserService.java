@@ -16,19 +16,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ParserService {
+    private static volatile boolean stopped = false;
+    private static ExecutorService executor;
+
     public static void run(
             String dorkPath,
             String proxyPath,
             TextArea log,
             ProgressBar progressBar
-    ) throws IOException, InterruptedException, ExecutionException {
+    ) throws IOException {
+        stopped = false;
         log(log, "Loading dorks...");
         List<String> dorks = DorkLoader.load(dorkPath);
 
@@ -42,37 +45,58 @@ public class ParserService {
         Set<SearchResult> allResults = ConcurrentHashMap.newKeySet();
         AtomicInteger done = new AtomicInteger();
 
-        int total = dorks.size();
-        try (ExecutorService executor = Executors.newFixedThreadPool(5)) {
-            List<Future<?>> futures = new ArrayList<>();
+        int total = Math.max(dorks.size(), 1);
 
-            for (String dork : dorks) {
-                log(log, "Processing dork: " + dork);
-                futures.add(executor.submit(() -> {
-                    try {
-                        for (ISearchEngine engine : engines) {
-                            log(log, "Engine: " + engine.getName());
-                            allResults.addAll(engine.search(dork, 50));
-                        }
+        executor = Executors.newFixedThreadPool(5);
+        List<Future<?>> futures = new ArrayList<>();
 
-                        int current = done.incrementAndGet();
-                        double progress = (double) current / total;
+        for (String dork : dorks) {
+            log(log, "Processing dork: " + dork);
+            futures.add(executor.submit(() -> {
+                if (stopped) return;
+                try {
+                    for (ISearchEngine engine : engines) {
+                        if (stopped) return;
+                        log(log, "Engine: " + engine.getName());
+                        allResults.addAll(engine.search(dork, 50));
+                    }
 
-                        Platform.runLater(() -> progressBar.setProgress(progress));
-                    } catch (Exception ignored) {}
-                }));
-            }
+                    int current = done.incrementAndGet();
+                    double progress = (double) current / total;
 
-            for (Future<?> f : futures) f.get();
+                    Platform.runLater(() -> progressBar.setProgress(progress));
+                } catch (Exception ignored) {
+                }
+            }));
         }
 
-        log(log, "Saving TXT...");
-        ResultTxtWriter.save("results.txt", allResults);
+        for (Future<?> f : futures) {
+            if (stopped) break;
+            try {
+                f.get();
+            } catch (Exception ignored) {
+            }
+        }
 
-        log(log, "Saving CSV...");
-        ResultCsvWriter.save(allResults, 500);
+        executor.shutdownNow();
+        if (!stopped) {
+            log(log, "Saving TXT...");
+            ResultTxtWriter.save("results.txt", allResults);
 
-        log(log, "Done");
+            log(log, "Saving CSV...");
+            ResultCsvWriter.save(allResults, 500);
+
+            log(log, "Done");
+        } else {
+            log(log, "Stopped");
+        }
+    }
+
+    public static void stop() {
+        stopped = true;
+        if (executor != null) {
+            executor.shutdownNow();
+        }
     }
 
     private static void log(TextArea area, String msg) {
