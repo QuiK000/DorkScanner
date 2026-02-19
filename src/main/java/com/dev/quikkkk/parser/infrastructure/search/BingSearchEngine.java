@@ -36,14 +36,7 @@ public class BingSearchEngine implements ISearchEngine {
                 Thread.sleep(2500);
 
                 List<WebElement> links = driver.findElements(By.cssSelector("li.b_algo h2 a"));
-                for (WebElement el : links) {
-                    if (results.size() >= limit) break;
-                    String href = el.getAttribute("href");
-
-                    if (href != null && !href.isEmpty()) {
-                        results.add(new SearchResult(href, dork));
-                    }
-                }
+                SearchUtils.extractLinks(links, results, limit, dork);
 
                 List<WebElement> next = driver.findElements(By.cssSelector("a.sb_pagN"));
                 if (next.isEmpty()) break;

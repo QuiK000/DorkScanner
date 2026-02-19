@@ -16,13 +16,13 @@ import java.util.Objects;
 import java.util.Set;
 
 @AllArgsConstructor
-public class GoogleSearchEngine implements ISearchEngine {
+public class DuckDuckGoSearchEngine implements ISearchEngine {
     private final ProxyManager proxyManager;
     private final boolean manualCaptcha;
 
     @Override
     public String getName() {
-        return GoogleSearchEngine.class.getSimpleName();
+        return DuckDuckGoSearchEngine.class.getSimpleName();
     }
 
     @Override
@@ -31,16 +31,27 @@ public class GoogleSearchEngine implements ISearchEngine {
         Set<SearchResult> results = new HashSet<>();
 
         try {
-            driver.get("https://www.google.com/search?q=" + URLEncoder.encode(dork, StandardCharsets.UTF_8));
+            driver.get("https://duckduckgo.com/?q=" + URLEncoder.encode(dork, StandardCharsets.UTF_8));
             while (results.size() < limit) {
                 waitForCaptcha(driver);
                 Thread.sleep(2500);
-                List<WebElement> links = driver.findElements(By.cssSelector("div.yuRUbf a"));
+
+                List<WebElement> links = driver.findElements(By.cssSelector("a[data-testid='result-title-a']"));
+                if (links.isEmpty())
+                    links = driver.findElements(By.cssSelector("div.result__extras__url a.result__url"));
+
+                int initialSize = results.size();
                 SearchUtils.extractLinks(links, results, limit, dork);
 
-                List<WebElement> next = driver.findElements(By.id("pnnext"));
+                if (results.size() == initialSize) break;
+                List<WebElement> next = driver.findElements(By.id("more-results"));
                 if (next.isEmpty()) break;
-                next.getFirst().click();
+
+                try {
+                    next.getFirst().click();
+                } catch (Exception e) {
+                    break;
+                }
             }
         } finally {
             driver.quit();
@@ -51,8 +62,10 @@ public class GoogleSearchEngine implements ISearchEngine {
 
     private void waitForCaptcha(WebDriver driver) throws InterruptedException {
         if (manualCaptcha) {
-            while (Objects.requireNonNull(driver.getCurrentUrl()).contains("sorry/index")) {
-                System.out.println("Waiting to resolve captcha");
+            while (Objects.requireNonNull(driver.getPageSource()).contains("If this error persists")
+                    || Objects.requireNonNull(driver.getCurrentUrl()).contains("lite.duckduckgo.com")
+            ) {
+                System.out.println("Waiting to resolve DuckDuckGo block");
                 Thread.sleep(3000);
             }
         }
