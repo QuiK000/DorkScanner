@@ -39,6 +39,7 @@ public class App extends Application {
 
         logArea.setEditable(false);
         logArea.setPrefHeight(250);
+        progressBar.setPrefWidth(Double.MAX_VALUE);
 
         VBox root = new VBox(
                 chooseDorks,
