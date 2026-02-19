@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.text.TextFlow?>
+<StackPane style="-fx-background-color: transparent; -fx-padding: 20;"
+           xmlns="http://javafx.com/javafx/22"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.dev.quikkkk.parser.app.AppController">
+
+    <VBox styleClass="main-window" spacing="15">
+        <padding>
+            <Insets top="10" right="20" bottom="20" left="20"/>
+        </padding>
+
+        <HBox fx:id="headerBox" styleClass="top-bar" alignment="CENTER_LEFT" spacing="10">
+            <TextFlow>
+                <Text text="DORK " styleClass="app-logo" style="-fx-fill: white;"/>
+                <Text text="СКАНЕР" styleClass="app-logo-accent" style="-fx-fill: #29ffa6;"/>
+            </TextFlow>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <HBox styleClass="window-controls-container" alignment="CENTER_RIGHT" spacing="8">
+                <Button text="—" styleClass="window-btn" onAction="#onMinimize"/>
+                <Button text="✕" styleClass="window-btn, close-btn" onAction="#onClose"/>
+            </HBox>
+        </HBox>
+
+        <GridPane hgap="15" vgap="15">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="50"/>
+                <ColumnConstraints percentWidth="50"/>
+            </columnConstraints>
+
+            <VBox styleClass="card" spacing="10" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Circle radius="3" fill="#29ffa6"/>
+                    <VBox spacing="2">
+                        <Label text="Источник Дорков" styleClass="card-title"/>
+                        <Label text="Выберите файл списка (.txt)" styleClass="card-subtitle"/>
+                    </VBox>
+                </HBox>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <TextField
+                            fx:id="dorksField"
+                            promptText="Путь к файлу..."
+                            styleClass="input-field"
+                            HBox.hgrow="ALWAYS"/>
+                    <Button text="•••" styleClass="browse-btn" onAction="#onChooseDorks"/>
+                </HBox>
+            </VBox>
+
+            <VBox styleClass="card" spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Circle radius="3" fill="#29ffa6"/>
+                    <VBox spacing="2">
+                        <Label text="Прокси Сервер" styleClass="card-title"/>
+                        <Label text="Необязательно (.txt)" styleClass="card-subtitle"/>
+                    </VBox>
+                </HBox>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <TextField
+                            fx:id="proxyField"
+                            promptText="Путь к файлу..."
+                            styleClass="input-field"
+                            HBox.hgrow="ALWAYS"/>
+                    <Button text="•••" styleClass="browse-btn" onAction="#onChooseProxy"/>
+                </HBox>
+            </VBox>
+
+            <VBox styleClass="card" spacing="10" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                <Label text="Конфигурация" styleClass="card-title"/>
+                <GridPane hgap="10" vgap="10">
+                    <Label text="Лимит:" textFill="GRAY" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                    <TextField
+                            fx:id="limitField"
+                            text="50"
+                            styleClass="input-field"
+                            GridPane.columnIndex="1"
+                            GridPane.rowIndex="0"/>
+
+                    <Label
+                            text="Потоки:"
+                            textFill="GRAY"
+                            GridPane.columnIndex="0"
+                            GridPane.rowIndex="1"/>
+                    <TextField
+                            fx:id="threadsField"
+                            text="5"
+                            styleClass="input-field"
+                            GridPane.columnIndex="1"
+                            GridPane.rowIndex="1"/>
+
+                    <CheckBox
+                            fx:id="manualCaptchaCheck"
+                            text="Ручной ввод капчи"
+                            textFill="WHITE"
+                            GridPane.columnIndex="0"
+                            GridPane.rowIndex="2"
+                            GridPane.columnSpan="2"/>
+                </GridPane>
+            </VBox>
+
+            <VBox styleClass="card" spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                <Label text="Управление" styleClass="card-title"/>
+                <HBox spacing="10">
+                    <Button
+                            text="ЗАПУСК"
+                            styleClass="primary-btn"
+                            maxWidth="Infinity"
+                            HBox.hgrow="ALWAYS"
+                            onAction="#onStart"/>
+                    <Button
+                            text="СТОП"
+                            styleClass="primary-btn, stop-btn"
+                            maxWidth="Infinity"
+                            HBox.hgrow="ALWAYS" onAction="#onStop"/>
+                </HBox>
+                <ProgressBar fx:id="progressBar" progress="0.0" maxWidth="Infinity"/>
+                <Label fx:id="statusLabel" text="Статус: Ожидание" styleClass="card-subtitle"/>
+            </VBox>
+        </GridPane>
+
+        <VBox styleClass="card" spacing="5" VBox.vgrow="ALWAYS">
+            <Label text="Системный журнал" styleClass="card-subtitle"/>
+            <TextArea
+                    fx:id="logArea"
+                    styleClass="log-area"
+                    editable="false"
+                    wrapText="true"
+                    style="-fx-background-insets: 0;"/>
+        </VBox>
+
+    </VBox>
+</StackPane>
