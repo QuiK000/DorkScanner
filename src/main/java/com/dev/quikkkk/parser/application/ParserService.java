@@ -6,6 +6,7 @@ import com.dev.quikkkk.parser.infrastructure.io.DorkLoader;
 import com.dev.quikkkk.parser.infrastructure.io.ResultCsvWriter;
 import com.dev.quikkkk.parser.infrastructure.io.ResultTxtWriter;
 import com.dev.quikkkk.parser.infrastructure.proxy.ProxyManager;
+import com.dev.quikkkk.parser.infrastructure.search.BingSearchEngine;
 import com.dev.quikkkk.parser.infrastructure.search.GoogleSearchEngine;
 import javafx.application.Platform;
 import javafx.scene.control.ProgressBar;
@@ -44,7 +45,10 @@ public class ParserService {
             log(log, "Proxy loaded");
         }
 
-        List<ISearchEngine> engines = List.of(new GoogleSearchEngine(proxyManager, manualCaptcha));
+        List<ISearchEngine> engines = List.of(
+                new GoogleSearchEngine(proxyManager, manualCaptcha),
+                new BingSearchEngine(proxyManager, manualCaptcha)
+        );
         Set<SearchResult> allResults = ConcurrentHashMap.newKeySet();
         AtomicInteger done = new AtomicInteger();
 
