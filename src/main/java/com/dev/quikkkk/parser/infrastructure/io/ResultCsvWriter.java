@@ -20,11 +20,11 @@ public class ResultCsvWriter {
 
             String filename = "results_" + fileIndex + ".csv";
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
-                writer.write("Address,Description");
+                writer.write("Address;Description");
                 writer.newLine();
 
                 for (SearchResult r : chunk) {
-                    writer.write(r.address() + ",\"" + r.description().replace("\"", "\"\"") + "\"");
+                    writer.write(r.address() + ";\"" + r.description().replace("\"", "\"\"") + "\"");
                     writer.newLine();
                 }
             }
