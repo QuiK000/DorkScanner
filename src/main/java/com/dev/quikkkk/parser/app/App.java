@@ -5,6 +5,7 @@ import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
@@ -20,6 +21,7 @@ public class App extends Application {
     private final TextField proxyField = new TextField();
     private final TextArea logArea = new TextArea();
     private final ProgressBar progressBar = new ProgressBar();
+    private final CheckBox manualCaptchaCheck = new CheckBox("Manual Captcha");
 
     @Override
     public void start(Stage stage) {
@@ -43,6 +45,7 @@ public class App extends Application {
                 dorksField,
                 chooseProxy,
                 proxyField,
+                manualCaptchaCheck,
                 startBtn,
                 stopBtn,
                 new Label("Progress: "),
@@ -69,6 +72,7 @@ public class App extends Application {
                 ParserService.run(
                         dorksField.getText(),
                         proxyField.getText(),
+                        manualCaptchaCheck.isSelected(),
                         logArea,
                         progressBar
                 );
