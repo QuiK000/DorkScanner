@@ -62,12 +62,12 @@ public class ParserService {
                         log(log, "Engine: " + engine.getName());
                         allResults.addAll(engine.search(dork, 50));
                     }
-
+                } catch (Exception e) {
+                    log(log, "Error (dork " + dork + "): " + e.getMessage());
+                } finally {
                     int current = done.incrementAndGet();
                     double progress = (double) current / total;
-
                     Platform.runLater(() -> progressBar.setProgress(progress));
-                } catch (Exception ignored) {
                 }
             }));
         }
