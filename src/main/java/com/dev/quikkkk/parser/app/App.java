@@ -1,10 +1,12 @@
 package com.dev.quikkkk.parser.app;
 
+import com.dev.quikkkk.parser.application.ParserService;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
@@ -17,6 +19,7 @@ public class App extends Application {
     private final TextField dorksField = new TextField();
     private final TextField proxyField = new TextField();
     private final TextArea logArea = new TextArea();
+    private final ProgressBar progressBar = new ProgressBar();
 
     @Override
     public void start(Stage stage) {
@@ -26,7 +29,8 @@ public class App extends Application {
         Button chooseProxy = new Button("proxy.txt: ");
         chooseProxy.setOnAction(_ -> proxyField.setText(openFile(stage)));
 
-        Button startBtn = new Button("Старт");
+        Button startBtn = new Button("Start");
+        startBtn.setOnAction(_ -> startParsing());
 
         logArea.setEditable(false);
         logArea.setPrefHeight(250);
@@ -38,7 +42,9 @@ public class App extends Application {
                 proxyField,
                 startBtn,
                 new Label("Log:"),
-                logArea
+                logArea,
+                new Label("Progress: "),
+                progressBar
         );
 
         root.setPadding(new Insets(15));
@@ -51,5 +57,20 @@ public class App extends Application {
         FileChooser chooser = new FileChooser();
         File file = chooser.showOpenDialog(stage);
         return file != null ? file.getAbsolutePath() : "";
+    }
+
+    private void startParsing() {
+        new Thread(() -> {
+            try {
+                ParserService.run(
+                        dorksField.getText(),
+                        proxyField.getText(),
+                        logArea,
+                        progressBar
+                );
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
     }
 }
