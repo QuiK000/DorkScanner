@@ -11,6 +11,7 @@ import com.dev.quikkkk.parser.infrastructure.search.DuckDuckGoSearchEngine;
 import com.dev.quikkkk.parser.infrastructure.search.GoogleSearchEngine;
 import com.dev.quikkkk.parser.infrastructure.search.YandexSearchEngine;
 import javafx.application.Platform;
+import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
 
@@ -36,16 +37,19 @@ public class ParserService {
             int limit,
             int threadsCount,
             TextArea log,
-            ProgressBar progressBar
+            ProgressBar progressBar,
+            Label statusLabel
     ) throws IOException {
         stopped = false;
-        log(log, "Loading dorks...");
+        updateStatus(statusLabel, "Статус: Выполняется...");
+
+        log(log, "Загрузка дорков...");
         List<String> dorks = DorkLoader.load(dorkPath);
 
         ProxyManager proxyManager = new ProxyManager();
         if (proxyPath != null && !proxyPath.isEmpty()) {
             proxyManager.load(proxyPath);
-            log(log, "Proxy loaded");
+            log(log, "Прокси загружены");
         }
 
         List<ISearchEngine> engines = List.of(
@@ -60,7 +64,7 @@ public class ParserService {
 
         int total = Math.max(dorks.size(), 1);
         if (manualCaptcha && threadsCount > 1) {
-            log(log, "Manual captcha is ONN. Forcing 1 thread to avoid multiple windows.");
+            log(log, "Ручная капча ВКЛ. Принудительно 1 поток во избежание множества окон.");
             threadsCount = 1;
         }
 
@@ -68,7 +72,7 @@ public class ParserService {
         List<Future<?>> futures = new ArrayList<>();
 
         for (String dork : dorks) {
-            log(log, "Processing dork: " + dork);
+            log(log, "Обработка дорков: " + dork);
             futures.add(executor.submit(() -> {
                 try {
                     if (stopped) return;
@@ -77,11 +81,11 @@ public class ParserService {
 
                     for (ISearchEngine engine : randomEngines) {
                         if (stopped) return;
-                        log(log, "Engine: " + engine.getName());
+                        log(log, "Поисковик: " + engine.getName());
                         allResults.addAll(engine.search(dork, limit));
                     }
                 } catch (Exception e) {
-                    log(log, "Error (dork " + dork + "): " + e.getMessage());
+                    log(log, "Ошибка (дорк " + dork + "): " + e.getMessage());
                 } finally {
                     int current = done.incrementAndGet();
                     double progress = (double) current / total;
@@ -100,15 +104,17 @@ public class ParserService {
 
         executor.shutdownNow();
         if (!stopped) {
-            log(log, "Saving TXT...");
+            log(log, "Сохранение TXT...");
             ResultTxtWriter.save("results.txt", allResults);
 
-            log(log, "Saving CSV...");
+            log(log, "Сохранение CSV...");
             ResultCsvWriter.save(allResults, 500);
 
-            log(log, "Done");
+            log(log, "Готово");
+            updateStatus(statusLabel, "Статус: Завершено");
         } else {
-            log(log, "Stopped");
+            log(log, "Остановлено");
+            updateStatus(statusLabel, "Статус: Остановленно");
         }
     }
 
@@ -121,5 +127,9 @@ public class ParserService {
 
     private static void log(TextArea area, String msg) {
         Platform.runLater(() -> area.appendText(msg + "\n"));
+    }
+
+    private static void updateStatus(Label label, String text) {
+        Platform.runLater(() -> label.setText(text));
     }
 }
