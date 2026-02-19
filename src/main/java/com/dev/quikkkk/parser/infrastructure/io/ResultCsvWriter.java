@@ -24,7 +24,7 @@ public class ResultCsvWriter {
                 writer.newLine();
 
                 for (SearchResult r : chunk) {
-                    writer.write(r.address() + "," + r.description());
+                    writer.write(r.address() + ",\"" + r.description().replace("\"", "\"\"") + "\"");
                     writer.newLine();
                 }
             }
