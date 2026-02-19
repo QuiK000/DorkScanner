@@ -16,6 +16,7 @@ import javafx.scene.control.TextArea;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,7 +72,10 @@ public class ParserService {
             futures.add(executor.submit(() -> {
                 try {
                     if (stopped) return;
-                    for (ISearchEngine engine : engines) {
+                    List<ISearchEngine> randomEngines = new ArrayList<>(engines);
+                    Collections.shuffle(randomEngines);
+
+                    for (ISearchEngine engine : randomEngines) {
                         if (stopped) return;
                         log(log, "Engine: " + engine.getName());
                         allResults.addAll(engine.search(dork, limit));
