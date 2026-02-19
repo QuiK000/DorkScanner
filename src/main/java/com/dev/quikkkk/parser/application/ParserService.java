@@ -7,7 +7,9 @@ import com.dev.quikkkk.parser.infrastructure.io.ResultCsvWriter;
 import com.dev.quikkkk.parser.infrastructure.io.ResultTxtWriter;
 import com.dev.quikkkk.parser.infrastructure.proxy.ProxyManager;
 import com.dev.quikkkk.parser.infrastructure.search.BingSearchEngine;
+import com.dev.quikkkk.parser.infrastructure.search.DuckDuckGoSearchEngine;
 import com.dev.quikkkk.parser.infrastructure.search.GoogleSearchEngine;
+import com.dev.quikkkk.parser.infrastructure.search.YandexSearchEngine;
 import javafx.application.Platform;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
@@ -47,8 +49,11 @@ public class ParserService {
 
         List<ISearchEngine> engines = List.of(
                 new GoogleSearchEngine(proxyManager, manualCaptcha),
-                new BingSearchEngine(proxyManager, manualCaptcha)
+                new BingSearchEngine(proxyManager, manualCaptcha),
+                new DuckDuckGoSearchEngine(proxyManager, manualCaptcha),
+                new YandexSearchEngine(proxyManager, manualCaptcha)
         );
+
         Set<SearchResult> allResults = ConcurrentHashMap.newKeySet();
         AtomicInteger done = new AtomicInteger();
 
