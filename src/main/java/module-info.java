@@ -4,5 +4,5 @@ module com.dev.quikkkk.parser {
 
 
     opens com.dev.quikkkk.parser to javafx.fxml;
-    exports com.dev.quikkkk.parser;
+    exports com.dev.quikkkk.parser.app;
 }
