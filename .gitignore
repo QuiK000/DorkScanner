@@ -4,6 +4,14 @@ target/
 !**/src/test/**/target/
 .kotlin
 
+
+Parser
+out
+runtime
+target
+.idea/artifacts/Parser_jar.xml
+src/main/resources/META-INF
+
 ### IntelliJ IDEA ###
 .idea/modules.xml
 .idea/jarRepositories.xml
