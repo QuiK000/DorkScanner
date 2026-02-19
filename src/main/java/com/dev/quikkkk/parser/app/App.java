@@ -32,6 +32,9 @@ public class App extends Application {
         Button startBtn = new Button("Start");
         startBtn.setOnAction(_ -> startParsing());
 
+        Button stopBtn = new Button("Stop");
+        stopBtn.setOnAction(_ -> ParserService.stop());
+
         logArea.setEditable(false);
         logArea.setPrefHeight(250);
 
@@ -41,10 +44,11 @@ public class App extends Application {
                 chooseProxy,
                 proxyField,
                 startBtn,
-                new Label("Log:"),
-                logArea,
+                stopBtn,
                 new Label("Progress: "),
-                progressBar
+                progressBar,
+                new Label("Log:"),
+                logArea
         );
 
         root.setPadding(new Insets(15));
