@@ -28,6 +28,7 @@ public class ParserService {
     public static void run(
             String dorkPath,
             String proxyPath,
+            boolean manualCaptcha,
             TextArea log,
             ProgressBar progressBar
     ) throws IOException {
@@ -41,13 +42,14 @@ public class ParserService {
             log(log, "Proxy loaded");
         }
 
-        List<ISearchEngine> engines = List.of(new GoogleSearchEngine(proxyManager));
+        List<ISearchEngine> engines = List.of(new GoogleSearchEngine(proxyManager, manualCaptcha));
         Set<SearchResult> allResults = ConcurrentHashMap.newKeySet();
         AtomicInteger done = new AtomicInteger();
 
         int total = Math.max(dorks.size(), 1);
+        int threadsCount = manualCaptcha ? 1 : 5;
 
-        executor = Executors.newFixedThreadPool(5);
+        executor = Executors.newFixedThreadPool(threadsCount);
         List<Future<?>> futures = new ArrayList<>();
 
         for (String dork : dorks) {
