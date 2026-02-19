@@ -29,6 +29,8 @@ public class ParserService {
             String dorkPath,
             String proxyPath,
             boolean manualCaptcha,
+            int limit,
+            int threadsCount,
             TextArea log,
             ProgressBar progressBar
     ) throws IOException {
@@ -47,7 +49,10 @@ public class ParserService {
         AtomicInteger done = new AtomicInteger();
 
         int total = Math.max(dorks.size(), 1);
-        int threadsCount = manualCaptcha ? 1 : 5;
+        if (manualCaptcha && threadsCount > 1) {
+            log(log, "Manual captcha is ONN. Forcing 1 thread to avoid multiple windows.");
+            threadsCount = 1;
+        }
 
         executor = Executors.newFixedThreadPool(threadsCount);
         List<Future<?>> futures = new ArrayList<>();
@@ -55,12 +60,12 @@ public class ParserService {
         for (String dork : dorks) {
             log(log, "Processing dork: " + dork);
             futures.add(executor.submit(() -> {
-                if (stopped) return;
                 try {
+                    if (stopped) return;
                     for (ISearchEngine engine : engines) {
                         if (stopped) return;
                         log(log, "Engine: " + engine.getName());
-                        allResults.addAll(engine.search(dork, 50));
+                        allResults.addAll(engine.search(dork, limit));
                     }
                 } catch (Exception e) {
                     log(log, "Error (dork " + dork + "): " + e.getMessage());
