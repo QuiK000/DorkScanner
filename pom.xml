@@ -81,7 +81,7 @@
                         <!-- Default configuration for running with: mvn clean javafx:run -->
                         <id>default-cli</id>
                         <configuration>
-                            <mainClass>com.dev.quikkkk.parser/com.dev.quikkkk.parser.HelloApplication</mainClass>
+                            <mainClass>com.dev.quikkkk.parser/com.dev.quikkkk.parser.Launcher</mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>
@@ -91,6 +91,20 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.panteleyev</groupId>
+                <artifactId>jpackage-maven-plugin</artifactId>
+                <version>1.6.0</version>
+
+                <configuration>
+                    <name>Parser</name>
+                    <mainClass>com.dev.quikkkk.parser.Launcher</mainClass>
+
+                    <destination>${project.build.directory}</destination>
+                    <input>${project.build.directory}</input>
+                    <mainJar>${project.build.finalName}.jar</mainJar>
+                </configuration>
             </plugin>
         </plugins>
     </build>
