@@ -8,6 +8,19 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public class SearchUtils {
+    private static final List<String> IGNORED_DOMAINS = List.of(
+            "google.",
+            "yandex.",
+            "bing.com",
+            "duckduckgo.com",
+            "yahoo.com",
+            "msn.com",
+            "microsoft.com",
+            "yastatic.net",
+            "youtube.com",
+            "doubleclick.net"
+    );
+
     public static void extractLinks(
             List<WebElement> links,
             Set<SearchResult> results,
@@ -19,7 +32,7 @@ public class SearchUtils {
             if (results.size() >= limit) break;
 
             String href = el.getAttribute("href");
-            if (href != null && !href.isEmpty() && filter.test(href)) {
+            if (href != null && !href.isEmpty() && !isIgnored(href) && filter.test(href)) {
                 results.add(new SearchResult(href, dork));
             }
         }
@@ -27,5 +40,16 @@ public class SearchUtils {
 
     public static void extractLinks(List<WebElement> links, Set<SearchResult> results, int limit, String dork) {
         extractLinks(links, results, limit, dork, _ -> true);
+    }
+
+    private static boolean isIgnored(String url) {
+        String lower = url.toLowerCase();
+        for (String domain : IGNORED_DOMAINS) {
+            if (lower.contains(domain)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
