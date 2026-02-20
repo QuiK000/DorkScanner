@@ -14,6 +14,8 @@ import java.util.Objects;
 import java.util.Set;
 
 public class GoogleSearchEngine implements ISearchEngine {
+    private static final long CAPTCHA_TIMEOUT_MS = 60000;
+
     @Override
     public String getName() {
         return GoogleSearchEngine.class.getSimpleName();
@@ -25,7 +27,7 @@ public class GoogleSearchEngine implements ISearchEngine {
         driver.get("https://www.google.com/search?q=" + URLEncoder.encode(dork, StandardCharsets.UTF_8));
 
         while (results.size() < limit) {
-            waitForCaptcha(driver);
+            if (!waitForCaptcha(driver)) break;
             Thread.sleep(2500);
 
             List<WebElement> links = driver.findElements(By.cssSelector("div.yuRUbf a"));
@@ -40,10 +42,19 @@ public class GoogleSearchEngine implements ISearchEngine {
         return results;
     }
 
-    private void waitForCaptcha(WebDriver driver) throws InterruptedException {
+    private boolean waitForCaptcha(WebDriver driver) throws InterruptedException {
+        long start = System.currentTimeMillis();
+
         while (Objects.requireNonNull(driver.getCurrentUrl()).contains("sorry/index")) {
+            if (System.currentTimeMillis() - start > CAPTCHA_TIMEOUT_MS) {
+                System.out.println("Timeout waiting for Google captcha. Skipping...");
+                return false;
+            }
+
             System.out.println("Waiting to resolve captcha");
             Thread.sleep(3000);
         }
+
+        return true;
     }
 }

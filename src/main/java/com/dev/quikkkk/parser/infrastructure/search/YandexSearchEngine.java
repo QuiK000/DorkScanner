@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Set;
 
 public class YandexSearchEngine implements ISearchEngine {
+    private static final long CAPTCHA_TIMEOUT_MS = 60000;
+
     @Override
     public String getName() {
         return YandexSearchEngine.class.getSimpleName();
@@ -25,7 +27,7 @@ public class YandexSearchEngine implements ISearchEngine {
         driver.get("https://yandex.com/search/?text=" + URLEncoder.encode(dork, StandardCharsets.UTF_8));
 
         while (results.size() < limit) {
-            waitForCaptcha(driver);
+            if (!waitForCaptcha(driver)) break;
             Thread.sleep(2500);
 
             List<WebElement> links = driver.findElements(By.cssSelector("li.serp-item a.organic__url"));
@@ -52,12 +54,21 @@ public class YandexSearchEngine implements ISearchEngine {
         return results;
     }
 
-    private void waitForCaptcha(WebDriver driver) throws InterruptedException {
+    private boolean waitForCaptcha(WebDriver driver) throws InterruptedException {
+        long start = System.currentTimeMillis();
         String url = driver.getCurrentUrl();
+
         while (url != null && (url.contains("showcaptcha") || url.contains("captcha"))) {
+            if (System.currentTimeMillis() - start > CAPTCHA_TIMEOUT_MS) {
+                System.out.println("Timeout waitint for Yandex Captcha. Skipping");
+                return false;
+            }
+
             System.out.println("Waiting to resolve Yandex captcha");
             Thread.sleep(3000);
             url = driver.getCurrentUrl();
         }
+
+        return true;
     }
 }

@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Set;
 
 public class BingSearchEngine implements ISearchEngine {
+    private static final long CAPTCHA_TIMEOUT_MS = 60000;
+
     @Override
     public String getName() {
         return BingSearchEngine.class.getSimpleName();
@@ -24,7 +26,7 @@ public class BingSearchEngine implements ISearchEngine {
         driver.get("https://www.bing.com/search?q=" + URLEncoder.encode(dork, StandardCharsets.UTF_8));
 
         while (results.size() < limit) {
-            waitForCaptcha(driver);
+            if (!waitForCaptcha(driver)) break;
             Thread.sleep(2500);
 
             List<WebElement> links = driver.findElements(By.cssSelector("li.b_algo h2 a"));
@@ -38,12 +40,21 @@ public class BingSearchEngine implements ISearchEngine {
         return results;
     }
 
-    private void waitForCaptcha(WebDriver driver) throws InterruptedException {
+    private boolean waitForCaptcha(WebDriver driver) throws InterruptedException {
+        long start = System.currentTimeMillis();
         String url = driver.getCurrentUrl();
+
         while (url != null && (url.contains("challenge") || url.contains("verify"))) {
+            if (System.currentTimeMillis() - start > CAPTCHA_TIMEOUT_MS) {
+                System.out.println("TImeout waiting for Bing captchja. Skipping...");
+                return false;
+            }
+
             System.out.println("Waiting to resolve Bing captcha");
             Thread.sleep(3000);
             url = driver.getCurrentUrl();
         }
+
+        return true;
     }
 }

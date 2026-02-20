@@ -14,6 +14,8 @@ import java.util.Objects;
 import java.util.Set;
 
 public class DuckDuckGoSearchEngine implements ISearchEngine {
+    private static final long CAPTCHA_TIMEOUT_MS = 60000;
+
     @Override
     public String getName() {
         return DuckDuckGoSearchEngine.class.getSimpleName();
@@ -25,7 +27,7 @@ public class DuckDuckGoSearchEngine implements ISearchEngine {
 
         driver.get("https://duckduckgo.com/?q=" + URLEncoder.encode(dork, StandardCharsets.UTF_8));
         while (results.size() < limit) {
-            waitForCaptcha(driver);
+            if (!waitForCaptcha(driver)) break;
             Thread.sleep(2500);
 
             List<WebElement> links = driver.findElements(By.cssSelector("a[data-testid='result-title-a']"));
@@ -49,12 +51,21 @@ public class DuckDuckGoSearchEngine implements ISearchEngine {
         return results;
     }
 
-    private void waitForCaptcha(WebDriver driver) throws InterruptedException {
+    private boolean waitForCaptcha(WebDriver driver) throws InterruptedException {
+        long start = System.currentTimeMillis();
+
         while (Objects.requireNonNull(driver.getPageSource()).contains("If this error persists")
                 || Objects.requireNonNull(driver.getCurrentUrl()).contains("lite.duckduckgo.com")
         ) {
+            if (System.currentTimeMillis() - start > CAPTCHA_TIMEOUT_MS) {
+                System.out.println("Timeout waiting for DUckDuckGo block. Skipping...");
+                return false;
+            }
+
             System.out.println("Waiting to resolve DuckDuckGo block");
             Thread.sleep(3000);
         }
+
+        return true;
     }
 }
