@@ -5,6 +5,7 @@ import com.dev.quikkkk.parser.domain.search.ISearchEngine;
 import com.dev.quikkkk.parser.infrastructure.io.DorkLoader;
 import com.dev.quikkkk.parser.infrastructure.io.ResultCsvWriter;
 import com.dev.quikkkk.parser.infrastructure.io.ResultTxtWriter;
+import com.dev.quikkkk.parser.infrastructure.proxy.DriverPool;
 import com.dev.quikkkk.parser.infrastructure.proxy.ProxyManager;
 import com.dev.quikkkk.parser.infrastructure.search.BingSearchEngine;
 import com.dev.quikkkk.parser.infrastructure.search.DuckDuckGoSearchEngine;
@@ -14,6 +15,7 @@ import javafx.application.Platform;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
+import org.openqa.selenium.WebDriver;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ParserService {
     private static volatile boolean stopped = false;
     private static ExecutorService executor;
+    private static DriverPool driverPool;
 
     public static void run(
             String dorkPath,
@@ -53,10 +56,10 @@ public class ParserService {
         }
 
         List<ISearchEngine> engines = List.of(
-                new GoogleSearchEngine(proxyManager, manualCaptcha),
-                new BingSearchEngine(proxyManager, manualCaptcha),
-                new DuckDuckGoSearchEngine(proxyManager, manualCaptcha),
-                new YandexSearchEngine(proxyManager, manualCaptcha)
+                new GoogleSearchEngine(),
+                new BingSearchEngine(),
+                new DuckDuckGoSearchEngine(),
+                new YandexSearchEngine()
         );
 
         Set<SearchResult> allResults = ConcurrentHashMap.newKeySet();
@@ -68,28 +71,34 @@ public class ParserService {
             threadsCount = 1;
         }
 
+        driverPool = new DriverPool(threadsCount, proxyManager, manualCaptcha);
         executor = Executors.newFixedThreadPool(threadsCount);
         List<Future<?>> futures = new ArrayList<>();
 
         for (String dork : dorks) {
             log(log, "Обработка дорков: " + dork);
             futures.add(executor.submit(() -> {
+                WebDriver driver = null;
                 try {
+                    driver = driverPool.borrow();
                     if (stopped) return;
+
                     List<ISearchEngine> randomEngines = new ArrayList<>(engines);
                     Collections.shuffle(randomEngines);
 
                     for (ISearchEngine engine : randomEngines) {
                         if (stopped) return;
                         log(log, "Поисковик: " + engine.getName());
-                        allResults.addAll(engine.search(dork, limit));
+                        allResults.addAll(engine.search(dork, limit, driver));
                     }
-                } catch (Exception e) {
-                    log(log, "Ошибка (дорк " + dork + "): " + e.getMessage());
+                } catch (Throwable e) {
+                    log(log, "КРИТИЧЕСКАЯ ОШИБКА ПОТОКА: " + e);
                 } finally {
                     int current = done.incrementAndGet();
                     double progress = (double) current / total;
+
                     Platform.runLater(() -> progressBar.setProgress(progress));
+                    if (driver != null) driverPool.returnDriver(driver);
                 }
             }));
         }
@@ -98,11 +107,14 @@ public class ParserService {
             if (stopped) break;
             try {
                 f.get();
-            } catch (Exception ignored) {
+            } catch (Throwable e) {
+                log(log, "ОШИБКА ПРИ ОЖИДАНИИ: " + e);
             }
         }
 
         executor.shutdownNow();
+        driverPool.shutdown();
+
         if (!stopped) {
             log(log, "Сохранение TXT...");
             ResultTxtWriter.save("results.txt", allResults);
@@ -120,9 +132,9 @@ public class ParserService {
 
     public static void stop() {
         stopped = true;
-        if (executor != null) {
-            executor.shutdownNow();
-        }
+
+        if (executor != null) executor.shutdownNow();
+        if (driverPool != null) driverPool.shutdown();
     }
 
     private static void log(TextArea area, String msg) {
