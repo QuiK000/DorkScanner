@@ -43,6 +43,8 @@ public class ParserService {
             ProgressBar progressBar,
             Label statusLabel
     ) throws IOException {
+        System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
+
         stopped = false;
         updateStatus(statusLabel, "Статус: Выполняется...");
 
