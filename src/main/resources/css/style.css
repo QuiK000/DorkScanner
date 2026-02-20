@@ -21,7 +21,7 @@
     -fx-fill: white;
     -fx-font-family: "Segoe UI", sans-serif;
     -fx-font-size: 16px;
-    -fx-font-weight: 800; /* Жирнее */
+    -fx-font-weight: 800;
 }
 
 .app-logo-accent {
