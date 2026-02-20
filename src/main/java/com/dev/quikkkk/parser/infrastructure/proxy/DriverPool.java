@@ -2,33 +2,55 @@ package com.dev.quikkkk.parser.infrastructure.proxy;
 
 import org.openqa.selenium.WebDriver;
 
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 
 public class DriverPool {
-    private final BlockingQueue<WebDriver> pool;
+    private final BlockingQueue<WebDriver> drivers;
+    private final ProxyManager proxyManager;
+    private final boolean manualCaptcha;
+    private final Consumer<String> logger;
 
-    public DriverPool(int size, ProxyManager proxyManager, boolean manualCaptcha) {
-        pool = new ArrayBlockingQueue<>(size);
-        for (int i = 0; i < size; i++) {
-            pool.offer(proxyManager.createDriver(manualCaptcha));
+    public DriverPool(int poolSize, ProxyManager proxyManager, boolean manualCaptcha, Consumer<String> logger) {
+        this.drivers = new LinkedBlockingQueue<>(poolSize);
+        this.proxyManager = proxyManager;
+        this.manualCaptcha = manualCaptcha;
+        this.logger = logger;
+
+        for (int i = 0; i < poolSize; i++) {
+            try {
+                WebDriver driver = proxyManager.createDriverWithRetry(manualCaptcha, logger);
+                drivers.offer(driver);
+            } catch (Exception e) {
+                logger.accept("Критическая ошибка создания пула драйверов: " + e.getMessage());
+            }
         }
     }
 
     public WebDriver borrow() throws InterruptedException {
-        return pool.take();
+        return drivers.take();
     }
 
     public void returnDriver(WebDriver driver) {
-        pool.offer(driver);
+        if (driver != null) {
+            drivers.offer(driver);
+        }
     }
 
-    public void shutdown() {
-        WebDriver driver;
-        while ((driver = pool.poll()) != null) {
+    public WebDriver restartDriver(WebDriver oldDriver) {
+        if (oldDriver != null) {
             try {
-                driver.quit();
+                oldDriver.quit();
             } catch (Exception ignored) {}
+        }
+
+        logger.accept("Пересоздаю поток с новым прокси...");
+        try {
+            return proxyManager.createDriverWithRetry(manualCaptcha, logger);
+        } catch (Exception e) {
+            logger.accept("Не удалось пересоздать драйвер: " + e.getMessage());
+            return null;
         }
     }
 }
