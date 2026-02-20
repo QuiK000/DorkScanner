@@ -17,6 +17,7 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
 import org.openqa.selenium.WebDriver;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,6 +45,9 @@ public class ParserService {
             Label statusLabel
     ) throws IOException {
         System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
+        File f = new File("chromedriver.exe");
+
+        if (!f.exists()) log(log, "ОШИБКА: Файл chromedriver.exe не найден рядом с программой!");
 
         stopped = false;
         updateStatus(statusLabel, "Статус: Выполняется...");
@@ -54,8 +58,11 @@ public class ParserService {
         ProxyManager proxyManager = new ProxyManager();
         if (proxyPath != null && !proxyPath.isEmpty()) {
             proxyManager.load(proxyPath);
-            log(log, "Прокси загружены");
+            log(log, "Прокси загружены. Режим: Рандом + Авто-замена нерабочих.");
         }
+
+        log(log, "Запуск браузеров...");
+        driverPool = new DriverPool(threadsCount, proxyManager, manualCaptcha, msg -> log(log, msg));
 
         List<ISearchEngine> engines = List.of(
                 new GoogleSearchEngine(),
@@ -73,7 +80,6 @@ public class ParserService {
             threadsCount = 1;
         }
 
-        driverPool = new DriverPool(threadsCount, proxyManager, manualCaptcha);
         executor = Executors.newFixedThreadPool(threadsCount);
         List<Future<?>> futures = new ArrayList<>();
 
@@ -82,40 +88,48 @@ public class ParserService {
             futures.add(executor.submit(() -> {
                 WebDriver driver = null;
                 try {
-                    driver = driverPool.borrow();
                     if (stopped) return;
+                    driver = driverPool.borrow();
 
                     List<ISearchEngine> randomEngines = new ArrayList<>(engines);
                     Collections.shuffle(randomEngines);
 
                     for (ISearchEngine engine : randomEngines) {
                         if (stopped) return;
-                        log(log, "Поисковик: " + engine.getName());
-                        allResults.addAll(engine.search(dork, limit, driver));
+                        try {
+                            log(log, "Поисковик: " + engine.getName() + " | Дорк: " + dork);
+                            allResults.addAll(engine.search(dork, limit, driver));
+                        } catch (Exception e) {
+                            log(log, "Ошибка поиска ( " + engine.getName() + "): " + e.getMessage());
+                            WebDriver freshDriver = driverPool.restartDriver(driver);
+                            if (freshDriver != null) {
+                                driver = freshDriver;
+                            }
+                        }
                     }
                 } catch (Throwable e) {
                     log(log, "КРИТИЧЕСКАЯ ОШИБКА ПОТОКА: " + e);
                 } finally {
+                    if (driver != null) driverPool.returnDriver(driver);
+
                     int current = done.incrementAndGet();
                     double progress = (double) current / total;
 
                     Platform.runLater(() -> progressBar.setProgress(progress));
-                    if (driver != null) driverPool.returnDriver(driver);
                 }
             }));
         }
 
-        for (Future<?> f : futures) {
+        for (Future<?> fut : futures) {
             if (stopped) break;
             try {
-                f.get();
+                fut.get();
             } catch (Throwable e) {
                 log(log, "ОШИБКА ПРИ ОЖИДАНИИ: " + e);
             }
         }
 
         executor.shutdownNow();
-        driverPool.shutdown();
 
         if (!stopped) {
             log(log, "Сохранение TXT...");
@@ -127,16 +141,14 @@ public class ParserService {
             log(log, "Готово");
             updateStatus(statusLabel, "Статус: Завершено");
         } else {
-            log(log, "Остановлено");
+            log(log, "Остановлено пользователем");
             updateStatus(statusLabel, "Статус: Остановленно");
         }
     }
 
     public static void stop() {
         stopped = true;
-
         if (executor != null) executor.shutdownNow();
-        if (driverPool != null) driverPool.shutdown();
     }
 
     private static void log(TextArea area, String msg) {
