@@ -10,26 +10,51 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 
 public class ProxyManager {
     private final List<String> proxies = new CopyOnWriteArrayList<>();
-    private final AtomicInteger index = new AtomicInteger();
 
     public void load(String filePath) throws IOException {
-        proxies.addAll(Files.readAllLines(Path.of(filePath)));
+        List<String> lines = Files.readAllLines(Path.of(filePath));
+        for (String line : lines) {
+            if (!line.trim().isEmpty()) {
+                proxies.add(line.trim());
+            }
+        }
     }
 
-    public WebDriver createDriver(boolean isManualCaptcha) {
+    public WebDriver createDriverWithRetry(boolean isManualCaptcha, Consumer<String> logger) {
+        if (proxies.isEmpty()) return buildDriver(null, isManualCaptcha);
+
+        int attempts = 0;
+        int maxAttempts = proxies.size() * 2;
+
+        while (attempts < maxAttempts) {
+            String proxyAddr = getRandomProxy();
+            try {
+                return buildDriver(proxyAddr, isManualCaptcha);
+            } catch (Exception e) {
+                logger.accept("Прокси не рабочий: " + proxyAddr + " -> Пробую другой...");
+                attempts++;
+            }
+        }
+
+        throw new RuntimeException("Не удалось найти рабочий прокси после " + attempts + " попыток.");
+    }
+
+    private WebDriver buildDriver(String proxyAddr, boolean isManualCaptcha) {
         ChromeOptions options = new ChromeOptions();
 
         if (!isManualCaptcha) options.addArguments("--headless=new");
+
         options.addArguments("--disable-blink-features=AutomationControlled");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--user-agent=" + UserAgentPool.random());
+        options.addArguments("--remote-allow-origins=*");
 
-        String proxyAddr = nextProxy();
         if (proxyAddr != null) {
             Proxy proxy = new Proxy();
 
@@ -41,8 +66,9 @@ public class ProxyManager {
         return new ChromeDriver(options);
     }
 
-    private String nextProxy() {
+    private String getRandomProxy() {
         if (proxies.isEmpty()) return null;
-        return proxies.get(Math.abs(index.getAndIncrement() % proxies.size()));
+        int randomIndex = ThreadLocalRandom.current().nextInt(proxies.size());
+        return proxies.get(randomIndex);
     }
 }
