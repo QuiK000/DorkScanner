@@ -1,3 +1,34 @@
+# DORK SCANNER
+
+A desktop JavaFX application for automated Google Dorks searching across multiple search engines simultaneously.
+
+---
+
+## Description
+
+DORK SCANNER automatically crawls search engines (Google, Bing, DuckDuckGo, Yandex) based on provided dork queries and saves the found links to `results.txt` and `results_N.csv` files. It supports proxies, multithreading, and manual CAPTCHA solving.
+
+---
+
+## Requirements
+
+| Component     | Version    |
+|---------------|------------|
+| Java          | 22+        |
+| Maven         | 3.8.5+     |
+| Google Chrome | Latest     |
+| ChromeDriver  | Compatible with installed Chrome |
+
+> ChromeDriver (`chromedriver.exe`) must be located in the working directory next to the application.
+
+---
+
+## 🚀 Running
+
+### Via Maven Wrapper
+```bash
+./mvnw clean javafx:run
+
 # DORK СКАНЕР
 
 Десктопное приложение на JavaFX для автоматизированного поиска по Google Dorks через несколько поисковых систем одновременно.
