@@ -1,54 +1,56 @@
-# DORK СКАНЕР
+# DORK SCANNER
 
-Десктопное приложение на JavaFX для автоматизированного поиска по Google Dorks через несколько поисковых систем одновременно.
-
----
-
-## Описание
-
-DORK СКАНЕР автоматически обходит поисковые системы (Google, Bing, DuckDuckGo, Yandex) по заданным дорк-запросам и сохраняет найденные ссылки в файлы `results.txt` и `results_N.csv`. Поддерживает работу с прокси, многопоточность и ручное прохождение капчи.
+A JavaFX desktop application for automated Google Dork searching across multiple search engines simultaneously.
 
 ---
 
-## Требования
+## Overview
 
-| Компонент     | Версия     |
-|---------------|------------|
-| Java          | 22+        |
-| Maven         | 3.8.5+     |
-| Google Chrome | Последняя  |
-| ChromeDriver  | Совместимый с установленным Chrome |
-
-> ChromeDriver (`chromedriver.exe`) должен находиться в рабочей директории рядом с программой.
+DORK SCANNER automates crawling search engines (Google, Bing, DuckDuckGo, Yandex) using dork queries and saves all discovered URLs to `results.txt` and `results_N.csv`. Supports proxy rotation, multithreading, and manual CAPTCHA solving.
 
 ---
 
-## 🚀 Запуск
+## Requirements
 
-### Через Maven Wrapper
+| Component     | Version                              |
+|---------------|--------------------------------------|
+| Java          | 22+                                  |
+| Maven         | 3.8.5+                               |
+| Google Chrome | Latest                               |
+| ChromeDriver  | Compatible with your Chrome version  |
+
+> `chromedriver.exe` must be placed in the same directory as the application.
+
+---
+
+## Running
+
+### Via Maven Wrapper (Linux / macOS)
 ```bash
 ./mvnw clean javafx:run
 ```
 
-### На Windows
+### On Windows
 ```cmd
 mvnw.cmd clean javafx:run
 ```
 
 ---
 
-## Использование
+## Usage
 
-1. **Источник дорков** — выберите `.txt` файл, где каждая строка — отдельный дорк-запрос.
-2. **Прокси сервер** — опционально. Укажите `.txt` файл со списком SOCKS5 прокси в формате `host:port`.
-3. **Лимит** — максимальное количество результатов на один дорк (по умолчанию: 50).
-4. **Потоки** — количество параллельных потоков (по умолчанию: 5).
-5. **Ручной ввод капчи** — включите, если хотите вручную решать капчу в открывшемся браузере. При включении потоки принудительно ограничиваются до 1.
-6. Нажмите **ЗАПУСК** для начала сканирования, **СТОП** — для остановки.
+1. **Dork source** — select a `.txt` file where each line is a separate dork query.
+2. **Proxy server** — optional. Provide a `.txt` file with SOCKS5 proxies in `host:port` format.
+3. **Limit** — maximum number of results per dork (default: 50).
+4. **Threads** — number of parallel threads (default: 5).
+5. **Manual CAPTCHA** — enable to solve CAPTCHAs manually in the browser window. Forces thread count to 1 when active.
+6. Click **START** to begin scanning, **STOP** to abort.
 
 ---
 
-## Структура файлов дорков
+## Dork File Format
+
+One query per line:
 
 ```
 inurl:login.php
@@ -56,7 +58,9 @@ site:example.com filetype:sql
 intitle:"index of" "passwords"
 ```
 
-## 📁 Структура файла прокси
+## Proxy File Format
+
+One proxy per line:
 
 ```
 192.168.1.1:1080
@@ -65,60 +69,60 @@ intitle:"index of" "passwords"
 
 ---
 
-## Результаты
+## Output
 
-После завершения сканирования в рабочей директории появятся:
+After scanning completes, the following files appear in the working directory:
 
-- **`results.txt`** — список уникальных URL, по одному на строку.
-- **`results_1.csv`, `results_2.csv`, ...** — результаты, разбитые на файлы по 500 записей. Формат:
+- **`results.txt`** — unique URLs, one per line.
+- **`results_1.csv`, `results_2.csv`, ...** — results split into files of 500 records each. Format:
   ```
   https://example.com/login.php,
   ```
 
 ---
 
-## 🏗️ Архитектура проекта
+## Project Structure
 
 ```
 src/main/java/com/dev/quikkkk/parser/
-├── Launcher.java                        # Точка входа
+├── Launcher.java                        # Entry point
 ├── app/
 │   ├── App.java                         # JavaFX Application
-│   └── AppController.java               # FXML контроллер UI
+│   └── AppController.java               # FXML UI controller
 ├── application/
-│   └── ParserService.java               # Оркестрация поиска
+│   └── ParserService.java               # Search orchestration
 ├── domain/
-│   ├── model/SearchResult.java          # Модель результата
-│   └── search/ISearchEngine.java        # Интерфейс поисковика
+│   ├── model/SearchResult.java          # Result model
+│   └── search/ISearchEngine.java        # Search engine interface
 └── infrastructure/
     ├── io/
-    │   ├── DorkLoader.java              # Загрузка дорков из файла
-    │   ├── ResultTxtWriter.java         # Сохранение в TXT
-    │   └── ResultCsvWriter.java         # Сохранение в CSV
+    │   ├── DorkLoader.java              # Load dorks from file
+    │   ├── ResultTxtWriter.java         # Save results to TXT
+    │   └── ResultCsvWriter.java         # Save results to CSV
     ├── proxy/
-    │   ├── DriverPool.java              # Пул WebDriver-ов (borrow / return / restart)
-    │   ├── ProxyManager.java            # Создание драйверов с прокси и ротацией
-    │   └── UserAgentPool.java           # Пул User-Agent строк
+    │   ├── DriverPool.java              # WebDriver pool (borrow / return / restart)
+    │   ├── ProxyManager.java            # Driver creation with proxy rotation
+    │   └── UserAgentPool.java           # User-Agent string pool
     └── search/
         ├── GoogleSearchEngine.java
         ├── BingSearchEngine.java
         ├── DuckDuckGoSearchEngine.java
         ├── YandexSearchEngine.java
-        └── SearchUtils.java             # Общие утилиты извлечения ссылок
+        └── SearchUtils.java             # Shared link extraction utilities
 ```
 
 ---
 
-## Технологии
+## Tech Stack
 
-- **JavaFX 22** — графический интерфейс
-- **Selenium 4** — автоматизация браузера
-- **Jsoup 1.22** — парсинг HTML
-- **Apache POI 5** — работа с Excel (резерв)
-- **Lombok** — сокращение boilerplate-кода
+- **JavaFX 22** — graphical user interface
+- **Selenium 4** — browser automation
+- **Jsoup 1.22** — HTML parsing
+- **Apache POI 5** — Excel support (reserved)
+- **Lombok** — boilerplate reduction
 
 ---
 
-## Дисклеймер
+## Disclaimer
 
-Инструмент предназначен исключительно для образовательных целей и легитимного тестирования безопасности собственной инфраструктуры. Использование против систем без явного разрешения владельца является незаконным.
+This tool is intended solely for educational purposes and legitimate security testing of infrastructure you own or have explicit permission to test. Using it against systems without the owner's authorization is illegal.
